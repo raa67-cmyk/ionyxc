@@ -14,8 +14,24 @@ const STORAGE_KEY="ionyxc_samples_v2";
 
 function saveSamplesToStorage(samples){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(samples.filter(s=>!s.isDemo)));}catch(e){}}
 function loadSamplesFromStorage(){try{const r=localStorage.getItem(STORAGE_KEY);return r?JSON.parse(r):[];}catch(e){return[];}}
-function encodeSampleToURL(sample){try{const c=btoa(unescape(encodeURIComponent(JSON.stringify({id:sample.id,label:sample.label,metadata:sample.metadata,metrics:sample.metrics,filename:sample.filename}))));return`${window.location.origin}${window.location.pathname}?sample=${c}`;}catch(e){return null;}}
-function decodeSampleFromURL(){try{const p=new URLSearchParams(window.location.search);const r=p.get("sample");if(!r)return null;return JSON.parse(decodeURIComponent(escape(atob(r))));}catch(e){return null;}}
+function encodeSampleToURL(sample) {
+  try {
+    const compressed = btoa(unescape(encodeURIComponent(JSON.stringify({
+      id: sample.id, label: sample.label,
+      metadata: sample.metadata, metrics: sample.metrics, filename: sample.filename
+    }))));
+    return `${window.location.origin}${window.location.pathname}?sample=${compressed}`;
+  } catch (e) { return null; }
+}
+
+function decodeSampleFromURL() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("sample");
+    if (!raw) return null;
+    return JSON.parse(decodeURIComponent(escape(atob(raw))));
+  } catch (e) { return null; }
+}
 
 function HexIcon({size=32,glow=true}){return(<svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{filter:glow?"drop-shadow(0 0 8px #00ffe766)":"none"}}><polygon points="50,4 93,27 93,73 50,96 7,73 7,27" fill={B.bg} stroke={B.ion} strokeWidth="2.5"/><polygon points="50,18 79,34 79,66 50,82 21,66 21,34" fill="none" stroke={B.ionMid} strokeWidth="1"/><line x1="50" y1="18" x2="50" y2="82" stroke={B.ionDim} strokeWidth="1"/><line x1="21" y1="34" x2="79" y2="66" stroke={B.ionDim} strokeWidth="1"/><line x1="79" y1="34" x2="21" y2="66" stroke={B.ionDim} strokeWidth="1"/><circle cx="50" cy="50" r="6" fill={B.ion}/><circle cx="50" cy="18" r="2.5" fill={B.ion} opacity="0.7"/><circle cx="79" cy="34" r="2.5" fill={B.red} opacity="0.9"/><circle cx="79" cy="66" r="2.5" fill={B.ion} opacity="0.7"/><circle cx="50" cy="82" r="2.5" fill={B.ion} opacity="0.7"/><circle cx="21" cy="66" r="2.5" fill={B.red} opacity="0.9"/><circle cx="21" cy="34" r="2.5" fill={B.ion} opacity="0.7"/></svg>);}
 

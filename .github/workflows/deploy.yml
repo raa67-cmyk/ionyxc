@@ -1,4 +1,4 @@
-name: Deploy IONYX·C to GitHub Pages
+name: Deploy IONYXC to GitHub Pages
 
 on:
   push:
@@ -17,35 +17,18 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-<<<<<<< HEAD
-
-=======
->>>>>>> e84c2d2a60e3c7168b2cb194b3c7d24bb9a085ec
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-<<<<<<< HEAD
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-=======
       - name: Install dependencies
         run: npm install
+        working-directory: frontend
       - name: Build
         run: npm run build
->>>>>>> e84c2d2a60e3c7168b2cb194b3c7d24bb9a085ec
+        working-directory: frontend
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

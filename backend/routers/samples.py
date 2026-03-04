@@ -1,20 +1,28 @@
 from fastapi import APIRouter, HTTPException
-from typing import Dict, Any
+from typing import Any, List, Optional
+from pydantic import BaseModel
 import uuid
 
 router = APIRouter()
 
-_store: Dict[str, Any] = {}
+_store = {}
+
+class SamplePayload(BaseModel):
+    id: Optional[str] = None
+    label: str
+    filename: Optional[str] = None
+    metadata: Optional[dict] = {}
+    metrics: Optional[List[Any]] = []
 
 @router.post("/")
-def save_sample(data: dict):
+def save_sample(data: SamplePayload):
     sid = str(uuid.uuid4())[:8]
-    _store[sid] = data
+    _store[sid] = data.dict()
     return {"id": sid}
 
 @router.get("/")
 def list_samples():
-    return {"samples": [{"id": k, **{kk: vv for kk, vv in v.items() if kk != "metrics"}} for k, v in _store.items()]}
+    return {"samples": [{"id": k, "label": v.get("label"), "filename": v.get("filename")} for k, v in _store.items()]}
 
 @router.get("/{sample_id}")
 def get_sample_route(sample_id: str):

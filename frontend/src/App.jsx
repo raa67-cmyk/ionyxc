@@ -14,22 +14,29 @@ const STORAGE_KEY="ionyxc_samples_v2";
 
 function saveSamplesToStorage(samples){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(samples.filter(s=>!s.isDemo)));}catch(e){}}
 function loadSamplesFromStorage(){try{const r=localStorage.getItem(STORAGE_KEY);return r?JSON.parse(r):[];}catch(e){return[];}}
-function encodeSampleToURL(sample) {
+async function shareSampleToBackend(sample) {
   try {
-    const compressed = btoa(unescape(encodeURIComponent(JSON.stringify({
-      id: sample.id, label: sample.label,
-      metadata: sample.metadata, metrics: sample.metrics, filename: sample.filename
-    }))));
-    return `${window.location.origin}${window.location.pathname}?sample=${compressed}`;
+    const res = await fetch(`${API}/api/samples/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: sample.id, label: sample.label,
+        metadata: sample.metadata, metrics: sample.metrics, filename: sample.filename
+      })
+    });
+    const data = await res.json();
+    return `${window.location.origin}${window.location.pathname}?id=${data.id}`;
   } catch (e) { return null; }
 }
 
-function decodeSampleFromURL() {
+async function loadSampleFromURL() {
   try {
     const params = new URLSearchParams(window.location.search);
-    const raw = params.get("sample");
-    if (!raw) return null;
-    return JSON.parse(decodeURIComponent(escape(atob(raw))));
+    const id = params.get("id");
+    if (!id) return null;
+    const res = await fetch(`${API}/api/samples/${id}`);
+    if (!res.ok) return null;
+    return await res.json();
   } catch (e) { return null; }
 }
 
@@ -58,7 +65,8 @@ function MetadataForm({onSubmit,filename}){const[form,setForm]=useState({cell_id
 export default function App(){
   const demo=generateDemoData();
   const saved=loadSamplesFromStorage();
-  const sharedSample=decodeSampleFromURL();
+  const [sharedSample, setSharedSample] = useState(null);
+useEffect(() => { loadSampleFromURL().then(s => { if(s) { setSharedSample(s); setSamples(prev => [...prev, {...s, isShared:true}]); setSelectedIds(prev => [...prev, s.id]); }}); }, []);
   const initialSamples=[demo,...saved];
   if(sharedSample&&!initialSamples.find(s=>s.id===sharedSample.id)){initialSamples.push({...sharedSample,isShared:true});}
   const[samples,setSamples]=useState(initialSamples);
@@ -76,7 +84,12 @@ export default function App(){
   const processFile=async(metadata)=>{const rows=parseArbinCSV(pending.text);const metrics=computeMetrics(rows);const id=`s-${Date.now()}`;const newSample={id,label:metadata.cell_id||pending.filename,metadata,metrics,filename:pending.filename,isDemo:false};setSamples(s=>[...s,newSample]);setSelectedIds(ids=>[...ids,id]);setPending(null);showToast("Sample processed and saved!");};
   const toggleSelect=id=>setSelectedIds(ids=>ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]);
   const removeSample=id=>{setSamples(s=>s.filter(x=>x.id!==id));setSelectedIds(ids=>ids.filter(x=>x!==id));};
-  const copyShareLink=(sample)=>{const url=encodeSampleToURL(sample);if(url){navigator.clipboard.writeText(url);showToast("Share link copied to clipboard!");}};
+  const copyShareLink = async (sample) => {
+    showToast("Generating share link...");
+    const url = await shareSampleToBackend(sample);
+    if (url) { navigator.clipboard.writeText(url); showToast("Share link copied! Valid until server restart."); }
+    else showToast("Share failed — try again");
+  };
   const handleExportPDF=async()=>{setExporting(true);try{const filename=await exportPDF(activeSamples);showToast(`PDF saved: ${filename}`);}catch(e){showToast("PDF export failed");}setExporting(false);};
   const activeSamples=samples.filter(s=>selectedIds.includes(s.id));
   const primary=activeSamples[0];

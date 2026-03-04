@@ -5,6 +5,7 @@ import {
 } from "recharts";
 
 // ── Brand tokens ──────────────────────────────────────────────────────────
+const API = "https://ionyxc-production.up.railway.app";
 const B = {
   ion:     "#00ffe7",
   ionDim:  "#00ffe711",
@@ -292,9 +293,13 @@ export default function App() {
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
-  const processFile = (metadata) => {
-    const rows    = parseArbinCSV(pending.text);
-    const metrics = computeMetrics(rows);
+  const processFile = async(metadata) => {
+   const formData = new FormData();
+formData.append("file", new Blob([pending.text], { type: "text/csv" }), pending.filename);
+Object.entries(metadata).forEach(([k, v]) => formData.append(k, v));
+const res = await fetch(`${API}/api/upload/`, { method: "POST", body: formData });
+const data = await res.json();
+const metrics = data.metrics;
     const id = `s-${Date.now()}`;
     setSamples(s => [...s, { id, label: metadata.cell_id || pending.filename, metadata, metrics, filename: pending.filename, isDemo: false }]);
     setSelectedIds(ids => [...ids, id]);
